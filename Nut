@@ -1,0 +1,127 @@
+--// Auto Collect Gems + Nuts (FAST)
+
+local player = game:GetService("Players").LocalPlayer
+local rs = game:GetService("ReplicatedStorage")
+
+local gemRemote = rs:WaitForChild("Events"):WaitForChild("RequestCollectGem")
+local nutRemote = rs:WaitForChild("Events"):WaitForChild("RequestCollect")
+
+--========================
+-- GUI
+--========================
+local gui = Instance.new("ScreenGui", game.CoreGui)
+gui.Name = "AutoFarmGUI"
+
+local frame = Instance.new("Frame", gui)
+frame.Size = UDim2.new(0, 240, 0, 170)
+frame.Position = UDim2.new(0.5, -120, 0.5, -85)
+frame.BackgroundColor3 = Color3.fromRGB(25,25,25)
+frame.Active = true
+frame.Draggable = true
+
+-- Title
+local title = Instance.new("TextLabel", frame)
+title.Size = UDim2.new(1,0,0,30)
+title.Text = "Auto Farm"
+title.BackgroundColor3 = Color3.fromRGB(35,35,35)
+title.TextColor3 = Color3.new(1,1,1)
+
+-- Close Button
+local close = Instance.new("TextButton", frame)
+close.Size = UDim2.new(0,30,0,30)
+close.Position = UDim2.new(1,-30,0,0)
+close.Text = "X"
+close.BackgroundColor3 = Color3.fromRGB(170,0,0)
+close.TextColor3 = Color3.new(1,1,1)
+
+close.MouseButton1Click:Connect(function()
+    gui:Destroy()
+end)
+
+--========================
+-- GEM TOGGLE
+--========================
+local gemToggle = Instance.new("TextButton", frame)
+gemToggle.Size = UDim2.new(0.8,0,0,40)
+gemToggle.Position = UDim2.new(0.1,0,0.3,0)
+gemToggle.Text = "Gems OFF"
+gemToggle.BackgroundColor3 = Color3.fromRGB(100,0,0)
+gemToggle.TextColor3 = Color3.new(1,1,1)
+
+local gemRunning = false
+
+gemToggle.MouseButton1Click:Connect(function()
+    gemRunning = not gemRunning
+    
+    if gemRunning then
+        gemToggle.Text = "Gems ON"
+        gemToggle.BackgroundColor3 = Color3.fromRGB(0,170,0)
+    else
+        gemToggle.Text = "Gems OFF"
+        gemToggle.BackgroundColor3 = Color3.fromRGB(100,0,0)
+    end
+end)
+
+--========================
+-- NUT TOGGLE
+--========================
+local nutToggle = Instance.new("TextButton", frame)
+nutToggle.Size = UDim2.new(0.8,0,0,40)
+nutToggle.Position = UDim2.new(0.1,0,0.65,0)
+nutToggle.Text = "Nuts OFF"
+nutToggle.BackgroundColor3 = Color3.fromRGB(100,0,0)
+nutToggle.TextColor3 = Color3.new(1,1,1)
+
+local nutRunning = false
+
+nutToggle.MouseButton1Click:Connect(function()
+    nutRunning = not nutRunning
+    
+    if nutRunning then
+        nutToggle.Text = "Nuts ON"
+        nutToggle.BackgroundColor3 = Color3.fromRGB(0,170,0)
+    else
+        nutToggle.Text = "Nuts OFF"
+        nutToggle.BackgroundColor3 = Color3.fromRGB(100,0,0)
+    end
+end)
+
+--========================
+-- LOOP GEMS (1 detik)
+--========================
+task.spawn(function()
+    while true do
+        if gemRunning then
+            local folder = workspace:FindFirstChild("MyGems")
+            if folder then
+                for _, gem in pairs(folder:GetChildren()) do
+                    if not gemRunning then break end
+                    
+                    gemRemote:FireServer(gem.Name)
+                    task.wait(1)
+                end
+            end
+        end
+        task.wait(0.2)
+    end
+end)
+
+--========================
+-- LOOP NUTS (0.1 detik)
+--========================
+task.spawn(function()
+    while true do
+        if nutRunning then
+            local folder = workspace:FindFirstChild("MyNuts")
+            if folder then
+                for _, nut in pairs(folder:GetChildren()) do
+                    if not nutRunning then break end
+                    
+                    nutRemote:FireServer(nut.Name)
+                    task.wait(0.1) -- ⚡ super cepat
+                end
+            end
+        end
+        task.wait(0.1)
+    end
+end)
