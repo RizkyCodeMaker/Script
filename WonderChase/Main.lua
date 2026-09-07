@@ -880,6 +880,25 @@ local function runZoneSweepMode(cfg)
         end)
     end
 
+    -- Teleport bonus setelah SEMUA pickup (tag cfg.PICKUP_TAG, default "Pickup")
+    -- di seluruh zona sudah diambil. Dihitung sekali di awal, dipicu sekali saja.
+    local pickupTag = cfg.PICKUP_TAG or "Pickup"
+    local totalPickups = 0
+    if cfg.ALL_PICKUPS_TELEPORT then
+        for _, zone in ipairs(cfg.ZONES) do
+            for _, folderDef in ipairs(zone.folders) do
+                if folderDef.tag == pickupTag then
+                    local folder = resolvePath(folderDef.path)
+                    if folder then
+                        totalPickups += #folder:GetChildren()
+                    end
+                end
+            end
+        end
+    end
+    local pickupsCollected = 0
+    local allPickupsTeleportDone = false
+
     for zoneIdx, zone in ipairs(cfg.ZONES) do
         if not running or warpDone then break end
 
@@ -938,6 +957,19 @@ local function runZoneSweepMode(cfg)
                     StatusLabel.Text = ("%s -> %s [%s]"):format(zoneLabel, target.obj.Name, target.tag or "")
                 end
                 visited[target.obj] = true
+
+                if target.tag == pickupTag then
+                    pickupsCollected += 1
+                    if cfg.ALL_PICKUPS_TELEPORT and not allPickupsTeleportDone
+                        and totalPickups > 0 and pickupsCollected >= totalPickups then
+                        allPickupsTeleportDone = true
+                        task.wait(0.5)
+                        local hrpBonus = getHRP()
+                        hrpBonus.CFrame = CFrame.new(cfg.ALL_PICKUPS_TELEPORT + Vector3.new(0, 3, 0))
+                        StatusLabel.Text = "Semua pickup diambil! Teleport bonus..."
+                        task.wait(1)
+                    end
+                end
             end
 
             task.wait(1)
