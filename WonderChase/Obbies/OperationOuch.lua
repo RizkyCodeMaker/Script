@@ -4,16 +4,16 @@
 -- Return: table config obby ini
 -- =====================================================
 -- CATATAN (tolong konfirmasi/isi sesuai game sebenarnya):
---   - SPAWN_Y masih tebakan (disamakan dgn Y START_POS). Cek Y HumanoidRootPart
---     tepat saat baru spawn (sebelum teleport manapun), lalu update di bawah.
---   - TOTAL_TIME / RANDOM_TIME masih placeholder, sesuaikan dgn durasi ronde asli.
---   - Nama folder "Checkpoints" di Zone-2..5 diasumsikan sama polanya dengan
---     Zone-1-Mouth (workspace.Level["Zone-1-Mouth"].Checkpoints). Kalau beda,
---     tinggal ubah path di ZONES di bawah.
+-- - SPAWN_Y masih tebakan (disamakan dgn Y START_POS). Cek Y HumanoidRootPart
+-- tepat saat baru spawn (sebelum teleport manapun), lalu update di bawah.
+-- - TOTAL_TIME / RANDOM_TIME masih placeholder, sesuaikan dgn durasi ronde asli.
+-- - Nama folder "Checkpoints" di Zone-2..5 diasumsikan sama polanya dengan
+-- Zone-1-Mouth (workspace.Level["Zone-1-Mouth"].Checkpoints). Kalau beda,
+-- tinggal ubah path di ZONES di bawah.
 -- =====================================================
 
 return {
-    TOTAL_TIME = 200, -- TODO: sesuaikan durasi total (detik)
+    TOTAL_TIME = 205, -- fallback, dipakai kalau RANDOM_TIME tidak ada (di sini selalu di-override RANDOM_TIME)
     SPAWN_Y = 292.04, -- TODO: konfirmasi Y spawn asli
     PATH_GAME_START = {"Utility","ObbyColliders","GameStart"},
     PATH_GAME_STOP  = {"Utility","ObbyColliders","GameStop"},
@@ -21,6 +21,8 @@ return {
 
     ZONE_SWEEP_MODE = true,
     START_POS = Vector3.new(1826.24, 292.04, 837.31),
+    RANDOM_TIME = {200, 210}, -- override TOTAL_TIME random tiap lap
+    FLOAT_TAGS = {"Pickup"}, -- float nyala saat menuju item bertag ini, mati untuk tag lain (mis. Checkpoint)
 
     -- Hapus semua object bernama "StreamTogether" di bawah workspace.Level
     -- (mencakup semua zona, bukan cuma Zone-1-Mouth)
