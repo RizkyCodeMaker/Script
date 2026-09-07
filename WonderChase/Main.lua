@@ -25,6 +25,7 @@ local OBBY_FILES = {
     ["Crook Heaven"]    = "CrookHeaven",
     ["Shaun The Sheep"] = "ShaunTheSheep",
     ["Sciences"]        = "Sciences",
+    ["Operation Ouch!"] = "OperationOuch",
 }
 
 -- Cache config yang sudah di-load supaya tidak fetch berulang tiap Start
@@ -417,6 +418,31 @@ local function getPortalCFrame(portal)
     return nil
 end
 
+-- Hapus object berdasarkan nama, data-driven lewat cfg.DELETE_ITEMS
+-- Format: DELETE_ITEMS = { {scope = {"Level"}, name = "StreamTogether"}, ... }
+-- scope kosong/nil berarti cari di seluruh workspace
+local function deleteFlaggedItems(cfg)
+    if not cfg.DELETE_ITEMS then return end
+    for _, rule in ipairs(cfg.DELETE_ITEMS) do
+        pcall(function()
+            local scopeNode = workspace
+            if rule.scope then
+                scopeNode = resolvePath(rule.scope) or workspace
+            end
+            local count = 0
+            for _, d in ipairs(scopeNode:GetDescendants()) do
+                if d.Name == rule.name then
+                    d:Destroy()
+                    count += 1
+                end
+            end
+            if count > 0 then
+                StatusLabel.Text = ("Hapus %dx '%s'"):format(count, rule.name)
+            end
+        end)
+    end
+end
+
 local function clickReplay()
     local PlayerGui = player:WaitForChild("PlayerGui")
     local maxWait = 30
@@ -802,6 +828,87 @@ local function runSweepMode(cfg)
     end
 end
 
+-- Jalankan mode sweep per-zona berurutan (mis. Operation Ouch!)
+-- cfg.ZONES = {
+--     { name = "Zone-1-Mouth", folders = {
+--         {path = {"PickupSlots", "1-Mouth"}, tag = "Pickup"},
+--         {path = {"Level", "Zone-1-Mouth", "Checkpoints"}, tag = "Checkpoint"},
+--     }},
+--     ...
+-- }
+-- Semua item di satu zona (gabungan folder) dihabiskan (terdekat dulu),
+-- baru lanjut ke zona berikutnya secara berurutan.
+local function runZoneSweepMode(cfg)
+    if cfg.START_POS then
+        local hrp = getHRP()
+        hrp.CFrame = CFrame.new(cfg.START_POS + Vector3.new(0, 3, 0))
+        StatusLabel.Text = "Start -> " .. (selectedObby or "?")
+        task.wait(1)
+    end
+
+    for zoneIdx, zone in ipairs(cfg.ZONES) do
+        if not running or warpDone then break end
+
+        local zoneLabel = zone.name or ("Zone " .. zoneIdx)
+        StatusLabel.Text = "Zona: " .. zoneLabel
+        local visited = {}
+
+        while running and not warpDone do
+            waitUnpaused()
+            if not running or warpDone then break end
+
+            local hrp = getHRP()
+            local items = {}
+            for _, folderDef in ipairs(zone.folders) do
+                local folder = resolvePath(folderDef.path)
+                if folder then
+                    for _, child in ipairs(folder:GetChildren()) do
+                        if not visited[child] then
+                            local part = getPartFromObj(child)
+                            if part then
+                                table.insert(items, {obj = child, part = part, tag = folderDef.tag})
+                            end
+                        end
+                    end
+                end
+            end
+
+            if #items == 0 then
+                StatusLabel.Text = zoneLabel .. " selesai!"
+                task.wait(0.5)
+                break
+            end
+
+            table.sort(items, function(a, b)
+                local da = (a.part.Position - hrp.Position).Magnitude
+                local db = (b.part.Position - hrp.Position).Magnitude
+                return da < db
+            end)
+
+            local target = items[1]
+            if target and target.obj and target.obj.Parent then
+                local cf = getCFrameFromObj(target.obj, target.part)
+                if cf then
+                    hrp = getHRP()
+                    hrp.CFrame = cf * CFrame.new(0, 2, 0)
+                    StatusLabel.Text = ("%s -> %s [%s]"):format(zoneLabel, target.obj.Name, target.tag or "")
+                end
+                visited[target.obj] = true
+            end
+
+            task.wait(1)
+        end
+    end
+
+    if not warpDone and running then
+        local hrp = getHRP()
+        local gstObj = resolvePath(cfg.PATH_GAME_STOP)
+        if gstObj then hrp.CFrame = gstObj.CFrame + Vector3.new(0, 5, 0) end
+        StatusLabel.Text = "GameStop OK - Menunggu timer..."
+        while running and not warpDone do task.wait(0.5) end
+    end
+end
+
 -- Jalankan mode waypoint biasa
 local function runWaypointMode(cfg)
     local hrp
@@ -953,7 +1060,11 @@ BtnStart.MouseButton1Click:Connect(function()
             StatusLabel.Text = "GameStart OK"
             task.wait(1)
 
-            if cfg.SWEEP_MODE then
+            deleteFlaggedItems(cfg)
+
+            if cfg.ZONE_SWEEP_MODE then
+                runZoneSweepMode(cfg)
+            elseif cfg.SWEEP_MODE then
                 runSweepMode(cfg)
             else
                 runWaypointMode(cfg)
