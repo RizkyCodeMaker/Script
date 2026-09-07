@@ -106,7 +106,7 @@ local TitleLabel = Instance.new("TextLabel")
 TitleLabel.Size = UDim2.new(1, -80, 1, 0)
 TitleLabel.Position = UDim2.fromOffset(12, 0)
 TitleLabel.BackgroundTransparency = 1
-TitleLabel.Text = "Wonder Chase  |  v0.04"
+TitleLabel.Text = "Wonder Chase | v0.04"
 TitleLabel.TextColor3 = Color3.fromRGB(180, 190, 255)
 TitleLabel.Font = Enum.Font.GothamBold
 TitleLabel.TextSize = 15
@@ -158,7 +158,7 @@ local DropBtn = Instance.new("TextButton")
 DropBtn.Size = UDim2.new(1, 0, 0, 34)
 DropBtn.Position = UDim2.fromOffset(0, 22)
 DropBtn.BackgroundColor3 = Color3.fromRGB(30, 34, 52)
-DropBtn.Text = "  ▾  Pilih Obby..."
+DropBtn.Text = " ▾ Pilih Obby..."
 DropBtn.TextColor3 = Color3.fromRGB(200, 205, 235)
 DropBtn.Font = Enum.Font.Gotham
 DropBtn.TextSize = 13
@@ -200,7 +200,7 @@ for _, name in ipairs(obbyNames) do
     local item = Instance.new("TextButton")
     item.Size = UDim2.new(1, -8, 0, ITEM_H - 2)
     item.BackgroundColor3 = Color3.fromRGB(36, 40, 58)
-    item.Text = "  " .. name
+    item.Text = " " .. name
     item.TextColor3 = Color3.fromRGB(200, 210, 240)
     item.Font = Enum.Font.Gotham
     item.TextSize = 13
@@ -223,7 +223,7 @@ local TimerLabel = Instance.new("TextLabel")
 TimerLabel.Size = UDim2.new(1, 0, 0, 40)
 TimerLabel.Position = UDim2.fromOffset(0, 72)
 TimerLabel.BackgroundTransparency = 1
-TimerLabel.Text = "⏱  —"
+TimerLabel.Text = "⏱ —"
 TimerLabel.TextColor3 = Color3.fromRGB(255, 220, 80)
 TimerLabel.Font = Enum.Font.GothamBold
 TimerLabel.TextSize = 26
@@ -356,7 +356,7 @@ for _, item in ipairs(DropList:GetChildren()) do
     if item:IsA("TextButton") then
         item.MouseButton1Click:Connect(function()
             selectedObby = item.Name
-            DropBtn.Text = "  ✔  " .. item.Name
+            DropBtn.Text = " ✔ " .. item.Name
             DropBtn.TextColor3 = Color3.fromRGB(130, 220, 160)
             StatusLabel.Text = "Siap: " .. item.Name .. " — Tekan START"
             closeDropdown()
@@ -506,7 +506,7 @@ local function clickReplay()
     VIM:SendMouseButtonEvent(centerX, centerY, 0, false, game, 0)
 
     StatusLabel.Text = "🔄 Replay diklik! Menunggu reset..."
-    TimerLabel.Text = "⏱  —"
+    TimerLabel.Text = "⏱ —"
     return true
 end
 
@@ -565,7 +565,7 @@ end
 
 local function doPortalTeleport(cfg, loopFunc)
     warpDone = true
-    TimerLabel.Text = "⏱  0s"
+    TimerLabel.Text = "⏱ 0s"
     StatusLabel.Text = "Teleport ke Portal..."
     local hrp = getHRP()
     local portalObj = resolvePath(cfg.PATH_PORTAL)
@@ -592,7 +592,7 @@ local function stopAll()
     warpDone = true
     if timerThread then task.cancel(timerThread) timerThread = nil end
     if mainThread  then task.cancel(mainThread)  mainThread  = nil end
-    TimerLabel.Text = "⏱  —"
+    TimerLabel.Text = "⏱ —"
     StatusLabel.Text = "Dihentikan."
     BtnStart.BackgroundColor3 = Color3.fromRGB(40, 140, 70)
     BtnStart.Text = "▶ START"
@@ -830,11 +830,11 @@ end
 
 -- Jalankan mode sweep per-zona berurutan (mis. Operation Ouch!)
 -- cfg.ZONES = {
---     { name = "Zone-1-Mouth", folders = {
---         {path = {"PickupSlots", "1-Mouth"}, tag = "Pickup"},
---         {path = {"Level", "Zone-1-Mouth", "Checkpoints"}, tag = "Checkpoint"},
---     }},
---     ...
+-- { name = "Zone-1-Mouth", folders = {
+-- {path = {"PickupSlots", "1-Mouth"}, tag = "Pickup"},
+-- {path = {"Level", "Zone-1-Mouth", "Checkpoints"}, tag = "Checkpoint"},
+-- }},
+-- ...
 -- }
 -- Semua item di satu zona (gabungan folder) dihabiskan (terdekat dulu),
 -- baru lanjut ke zona berikutnya secara berurutan.
@@ -844,6 +844,40 @@ local function runZoneSweepMode(cfg)
         hrp.CFrame = CFrame.new(cfg.START_POS + Vector3.new(0, 3, 0))
         StatusLabel.Text = "Start -> " .. (selectedObby or "?")
         task.wait(1)
+    end
+
+    -- Float per-tag: aktif kalau tag target ada di cfg.FLOAT_TAGS, mati kalau tidak
+    -- (mis. FLOAT_TAGS = {"Pickup"} -> float nyala saat ambil pickup, mati saat ke checkpoint)
+    local floatActive = false
+    local function applyFloat()
+        pcall(function()
+            local hrp2 = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+            if not hrp2 then return end
+            local bv = hrp2:FindFirstChild("ZS_Float")
+            if floatActive then
+                if not bv then
+                    bv = Instance.new("BodyVelocity")
+                    bv.Name = "ZS_Float"
+                    bv.MaxForce = Vector3.new(0, 1e5, 0)
+                    bv.Parent = hrp2
+                end
+                bv.Velocity = Vector3.new(0, 0.5, 0)
+            elseif bv then
+                bv:Destroy()
+            end
+        end)
+    end
+
+    local floatLoopOn = true
+    if cfg.FLOAT_TAGS then
+        task.spawn(function()
+            while running and not warpDone and floatLoopOn do
+                applyFloat()
+                task.wait(0.05)
+            end
+            floatActive = false
+            applyFloat()
+        end)
     end
 
     for zoneIdx, zone in ipairs(cfg.ZONES) do
@@ -887,6 +921,16 @@ local function runZoneSweepMode(cfg)
 
             local target = items[1]
             if target and target.obj and target.obj.Parent then
+                -- Set status float sesuai tag target SEBELUM teleport ke situ
+                if cfg.FLOAT_TAGS then
+                    local shouldFloat = false
+                    for _, t in ipairs(cfg.FLOAT_TAGS) do
+                        if t == target.tag then shouldFloat = true break end
+                    end
+                    floatActive = shouldFloat
+                    applyFloat()
+                end
+
                 local cf = getCFrameFromObj(target.obj, target.part)
                 if cf then
                     hrp = getHRP()
@@ -899,6 +943,10 @@ local function runZoneSweepMode(cfg)
             task.wait(1)
         end
     end
+
+    floatLoopOn = false
+    floatActive = false
+    applyFloat()
 
     if not warpDone and running then
         local hrp = getHRP()
@@ -1039,7 +1087,7 @@ BtnStart.MouseButton1Click:Connect(function()
                 if not running then break end
                 local elapsed = os.clock() - startTime
                 local remain = math.max(0, cfg.TOTAL_TIME - elapsed)
-                TimerLabel.Text = ("⏱  %ds"):format(math.ceil(remain))
+                TimerLabel.Text = ("⏱ %ds"):format(math.ceil(remain))
                 if remain <= 0 then
                     if not warpDone then doPortalTeleport(cfg, runOneLap) end
                     break
