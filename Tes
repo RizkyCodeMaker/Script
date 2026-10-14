@@ -1,0 +1,97 @@
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+
+local gui = Instance.new("ScreenGui")
+gui.Name = "PromptEnabledGUI"
+gui.ResetOnSpawn = false
+gui.Parent = player:WaitForChild("PlayerGui")
+
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 250, 0, 145)
+frame.Position = UDim2.new(0.5, -125, 0.4, 0)
+frame.BackgroundColor3 = Color3.fromRGB(30, 33, 41)
+frame.BorderSizePixel = 0
+frame.Active = true
+frame.Draggable = true
+frame.Parent = gui
+
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 8)
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, -40, 0, 35)
+title.Position = UDim2.new(0, 10, 0, 0)
+title.BackgroundTransparency = 1
+title.Text = "Fire ProximityPrompt"
+title.TextColor3 = Color3.new(1, 1, 1)
+title.TextSize = 14
+title.Font = Enum.Font.GothamBold
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.Parent = frame
+
+local close = Instance.new("TextButton")
+close.Size = UDim2.new(0, 30, 0, 30)
+close.Position = UDim2.new(1, -35, 0, 3)
+close.BackgroundColor3 = Color3.fromRGB(190, 55, 55)
+close.Text = "X"
+close.TextColor3 = Color3.new(1, 1, 1)
+close.Font = Enum.Font.GothamBold
+close.Parent = frame
+
+close.MouseButton1Click:Connect(function()
+    gui:Destroy()
+end)
+
+local status = Instance.new("TextLabel")
+status.Size = UDim2.new(1, -20, 0, 30)
+status.Position = UDim2.new(0, 10, 0, 40)
+status.BackgroundTransparency = 1
+status.Text = "Status: Siap"
+status.TextColor3 = Color3.fromRGB(220, 220, 220)
+status.TextSize = 12
+status.Font = Enum.Font.Gotham
+status.Parent = frame
+
+local button = Instance.new("TextButton")
+button.Size = UDim2.new(1, -20, 0, 40)
+button.Position = UDim2.new(0, 10, 0, 85)
+button.BackgroundColor3 = Color3.fromRGB(55, 125, 85)
+button.Text = "KLIK 1X"
+button.TextColor3 = Color3.new(1, 1, 1)
+button.TextSize = 14
+button.Font = Enum.Font.GothamBold
+button.Parent = frame
+
+Instance.new("UICorner", button).CornerRadius = UDim.new(0, 6)
+
+button.MouseButton1Click:Connect(function()
+    local success, err = pcall(function()
+        local prompt = workspace.Terrain
+            :WaitForChild("UGC")
+            :WaitForChild("expozytor_UGC")
+            :WaitForChild("low.001")
+            :WaitForChild("ProximityPrompt")
+
+        if not prompt:IsA("ProximityPrompt") then
+            error("Objek bukan ProximityPrompt")
+        end
+
+        if not prompt.Enabled then
+            prompt.Enabled = true
+        end
+
+        if typeof(fireproximityprompt) ~= "function" then
+            error("fireproximityprompt tidak tersedia")
+        end
+
+        fireproximityprompt(prompt, 1)
+
+        status.Text = "Status: Prompt dipicu!"
+        status.TextColor3 = Color3.fromRGB(100, 255, 140)
+    end)
+
+    if not success then
+        status.Text = "Gagal menjalankan prompt"
+        status.TextColor3 = Color3.fromRGB(255, 100, 100)
+        warn(err)
+    end
+end)
